@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using System.Runtime.Remoting;
+using Moq;
+using NUnit.Framework;
 
 namespace WarCardGame.Tests
 {
@@ -9,187 +11,140 @@ namespace WarCardGame.Tests
         [Repeat(100)]
         public void Winner_Should_Be_Determined_By_Higher_Card()
         {
-            var game = new Game();
+            var player1 = CreateMockPlayer(new Card(4, Suit.Diamonds), new Card(8, Suit.Diamonds));
+            var player2 = CreateMockPlayer(new Card(3, Suit.Diamonds), new Card(7, Suit.Diamonds));
+            
+            var game = new Game(player1.Object, player2.Object);
 
-            string expectedWinner = null;
-            string actualWinner;
+            game.PlayTurn();
+            
+            player1.Verify(x => x.AddCards(It.Is<Card[]>(c => c.Length == 2)), Times.Once);
+            Assert.That(player1.Object.CardsLeft == 3);
+            Assert.That(player2.Object.CardsLeft == 1);
 
-            game.OnTurnStart += (sender, args) =>
-            {
-                expectedWinner = args.Player1Card.Value > args.Player2Card.Value ? "Player 1" : "Player 2";
-            };
+            game.PlayTurn();
 
-            game.OnTurnFinish += (sender, args) =>
-            {
-                actualWinner = args.Winner;
-
-                Assert.That(expectedWinner == actualWinner);
-            };
-
-            game.Play();
-        }
-
-        [Test]
-        [Repeat(100)]
-        public void Winning_Turn_Should_Increase_Card_Count_By_2()
-        {
-            var game = new Game();
-
-            int player1CardCount = 0;
-            int player2CardCount = 0;
-
-            game.OnTurnStart += (sender, args) =>
-            {
-                player1CardCount = game.Player1CardCount;
-                player2CardCount = game.Player2CardCount;
-            };
-
-            game.OnTurnFinish += (sender, args) =>
-            {
-                if (args.Winner == "Player 1")
-                    Assert.That(game.Player1CardCount == player1CardCount + 2);
-                else
-                    Assert.That(game.Player2CardCount == player2CardCount + 2);
-            };
-
-            game.Play();
-        }
-
-        [Test]
-        [Repeat(100)]
-        public void War_Should_Occur_When_Cards_Are_Equal()
-        {
-            var game = new Game();
-
-            bool war = false;
-            int turn = 0;
-
-            game.OnTurnStart += (sender, args) =>
-            {
-                if (args.Player1Card.Value == args.Player2Card.Value)
-                {
-                    war = true;
-                    turn = args.Turn;
-                }
-            };
-
-            game.OnWarStart += (sender, args) =>
-            {
-                // War should occur during the same turn when the cards values were equal.
-                Assert.That(args.Turn == turn);
-                Assert.IsTrue(war);
-            };
-
-            game.Play();
-        }
-
-        [Test]
-        [Repeat(100)]
-        public void Winner_Of_War_Should_Be_Determined_By_Higher_Card()
-        {
-            var game = new Game();
-
-            string expectedWinner = null;
-            string actualWinner;
-
-            game.OnWarDealt += (sender, args) =>
-            {
-                expectedWinner = args.Player1Card.Value > args.Player2Card.Value ? "Player 1" : "Player 2";
-            };
-
-            game.OnWarFinish += (sender, args) =>
-            {
-                actualWinner = args.Winner;
-
-                Assert.That(expectedWinner == actualWinner);
-            };
-
-            game.Play();
-        }
-
-        [Test]
-        [Repeat(100)]
-        public void Winning_War_Should_Increase_Card_Count_By_Multiples()
-        {
-            var game = new Game();
-
-            int player1CardCount = 0;
-            int player2CardCount = 0;
-            int warCount = 0;
-
-            game.OnTurnStart += (sender, args) =>
-            {
-                player1CardCount = game.Player1CardCount;
-                player2CardCount = game.Player2CardCount;
-            };
-
-            game.OnWarStart += (sender, args) =>
-            {
-                warCount++;
-            };
-
-            game.OnWarFinish += (sender, args) =>
-            {
-                // Depending on how many times War occurs in a row, we need to subtract the 2 cards we place down during each War occurrence.
-                // For example, if a player started with 20 cards, they should have 18 after placing down 2 cards. If they win, they'll
-                // receive their 2 War cards, the opponent's 2 War cards, and the original turn's 2 cards.
-                // The formula for the number of cards gained should be 2 + (WarCount * 4).
-
-                if (args.Winner == "Player 1")
-                {
-                    player1CardCount = player1CardCount - (warCount * 2);
-                    Assert.That(game.Player1CardCount == player1CardCount + args.WinningCardCount);
-                }
-                else
-                {
-                    player2CardCount = player2CardCount - (warCount * 2);
-                    Assert.That(game.Player2CardCount == player2CardCount + args.WinningCardCount);
-                }
-
-                warCount = 0;
-            };
-
-            game.Play();
-        }
-
-        [Test]
-        [Repeat(100)]
-        public void Game_Should_End_When_Player_Does_Not_Have_Enough_Cards_To_Finish_War()
-        {
-            var game = new Game();
-
-            int player1CardCount = 0;
-            int player2CardCount = 0;
-
-            game.OnWarStart += (sender, args) =>
-            {
-                player1CardCount = game.Player1CardCount;
-                player2CardCount = game.Player2CardCount;
-            };
-
-            game.OnWarNotEnoughCards += (sender, args) =>
-            {
-                if (args.Loser == "Player 1")
-                    Assert.That(player1CardCount < 2);
-                else
-                    Assert.That(player2CardCount < 2);
-            };
-
-            game.Play();
+            player1.Verify(x => x.AddCards(It.Is<Card[]>(c => c.Length == 2)), Times.Exactly(2));
+            Assert.That(player1.Object.CardsLeft == 4);
+            Assert.That(player2.Object.CardsLeft == 0);
         }
 
         [Test]
         [Repeat(100)]
         public void Game_Should_End_When_Player_Runs_Out_Of_Cards()
         {
-            var game = new Game();
+            var player1 = CreateMockPlayer(new Card(4, Suit.Diamonds));
+            var player2 = CreateMockPlayer(new Card(3, Suit.Diamonds));
+            bool gameFinished = false;
+
+            var game = new Game(player1.Object, player2.Object);
+            game.OnGameFinish += (sender, args) => { gameFinished = true; };
+            game.PlayTurn();
+            
+            Assert.IsTrue(gameFinished);
+        }
+
+        [Test]
+        [Repeat(100)]
+        public void War_Should_Occur_When_Cards_Are_Equal()
+        {
+            var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
+            var player2 = CreateMockPlayer(new Card(7, Suit.Hearts), new Card(5, Suit.Hearts), new Card(6, Suit.Hearts));
+
+            var game = new Game(player1.Object, player2.Object);
+            game.PlayTurn();
+
+            player1.Verify(x => x.PlayWar(), Times.Once);
+            player2.Verify(x => x.PlayWar(), Times.Once);
+        }
+
+        [Test]
+        [Repeat(100)]
+        public void Winner_Of_War_Should_Be_Determined_By_Higher_Card()
+        {
+            var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
+            var player2 = CreateMockPlayer(new Card(7, Suit.Hearts), new Card(5, Suit.Hearts), new Card(6, Suit.Hearts));
+            bool warFinished = false;
+
+            var game = new Game(player1.Object, player2.Object);
+
+            game.OnWarFinish += (sender, args) =>
+            {
+                warFinished = true;
+                Assert.That(args.Winner == "Player 2");
+                Assert.That(args.WinningCardCount == 6);
+            };
+
+            game.PlayTurn();
+            
+            Assert.IsTrue(warFinished);
+        }
+
+        [Test]
+        [Repeat(100)]
+        public void When_Multiple_Wars_Happen_Then_Winner_Should_Take_More_Cards()
+        {
+            var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(3, Suit.Diamonds), new Card(8, Suit.Diamonds), new Card(9, Suit.Clubs), new Card(5, Suit.Clubs));
+            var player2 = CreateMockPlayer(new Card(7, Suit.Hearts), new Card(2, Suit.Hearts), new Card(8, Suit.Hearts), new Card(8, Suit.Clubs), new Card(6, Suit.Clubs));
+            bool warFinished = false;
+
+            var game = new Game(player1.Object, player2.Object);
+
+            game.OnWarFinish += (sender, args) =>
+            {
+                warFinished = true;
+                Assert.That(args.Winner == "Player 2");
+                Assert.That(args.WinningCardCount == 10);
+            };
+
+            game.PlayTurn();
+
+            player1.Verify(x => x.PlayWar(), Times.Exactly(2));
+            player2.Verify(x => x.PlayWar(), Times.Exactly(2));
+            Assert.IsTrue(warFinished);
+        }
+
+        [Test]
+        [Repeat(100)]
+        public void Game_Should_End_When_Player_Does_Not_Have_Enough_Cards_To_Finish_War()
+        {
+            var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
+            var player2 = CreateMockPlayer(new Card(7, Suit.Hearts), new Card(5, Suit.Hearts));
+            bool notEnoughCards = false;
+            bool gameFinished = false;
+
+            var game = new Game(player1.Object, player2.Object);
+            
+            game.OnWarNotEnoughCards += (sender, args) =>
+            {
+                notEnoughCards = true;
+                Assert.That(args.Loser == "Player 2");
+            };
 
             game.OnGameFinish += (sender, args) =>
             {
-                Assert.That(game.Player1CardCount == 0 || game.Player2CardCount == 0);
+                gameFinished = true;
+                Assert.That(args.Winner == "Player 1");
             };
 
-            game.Play();
+            game.PlayTurn();
+
+            Assert.IsTrue(notEnoughCards);
+            Assert.IsTrue(gameFinished);
+        }
+
+        private Mock<Player> CreateMockPlayer(params Card[] cards)
+        {
+            var mock = new Mock<Player>();
+
+            mock.CallBase = true;
+            mock.Object.AddCards(cards);
+
+            // Reset the call invocation count so the previous AddCards won't impact our tests.
+            mock.Reset();
+            mock.CallBase = true;
+
+            return mock;
         }
     }
 }

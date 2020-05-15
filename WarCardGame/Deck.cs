@@ -7,13 +7,18 @@ namespace WarCardGame
     public class Deck : IEnumerable<Card>
     {
         private static readonly Random Random = new Random();
-        private readonly List<Card> _deck;
+        private readonly Queue<Card> _deck;
 
         public Deck()
         {
             List<Card> cards = GenerateCards();
 
             _deck = Shuffle(cards);
+        }
+
+        public Card GetCard()
+        {
+            return _deck.Dequeue();
         }
 
         private List<Card> GenerateCards()
@@ -35,15 +40,15 @@ namespace WarCardGame
             return cards;
         }
 
-        private List<Card> Shuffle(List<Card> cards)
+        private Queue<Card> Shuffle(List<Card> cards)
         {
-            var shuffledCards = new List<Card>();
+            var shuffledCards = new Queue<Card>();
 
             // Randomly pick a card from our unshuffled deck and add it to our shuffled deck.
             while (cards.Count > 0)
             {
                 int index = Random.Next(0, cards.Count);
-                shuffledCards.Add(cards[index]);
+                shuffledCards.Enqueue(cards[index]);
                 cards.RemoveAt(index);
             }
 

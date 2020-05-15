@@ -39,7 +39,7 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        public void Contains_Correct_Order_Of_Cards()
+        public void Contains_Correct_Number_Of_Cards_Per_Suit()
         {
             var deck = new Deck();
 

@@ -4,13 +4,11 @@ namespace WarCardGame.Events
 {
     public class NotEnoughCardsEventArgs : EventArgs
     {
-        public int Turn { get; set; }
-        public string Loser { get; set; }
+        public string Loser { get; }
 
-        public NotEnoughCardsEventArgs(int turn, string loser)
+        public NotEnoughCardsEventArgs(string loser)
         {
             Loser = loser;
-            Turn = turn;
         }
     }
 }

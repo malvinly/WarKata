@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Text;
 
 namespace WarCardGame
@@ -43,12 +44,29 @@ namespace WarCardGame
             {
                 Console.Clear();
 
-                for (int i = 0; i < numberOfGames; i++)
+                for (int num = 0; num < numberOfGames; num++)
                 {
                     Console.Write($"Game #{totalNumberOfGames++}: ");
 
-                    InitGame(verboseMode)
-                        .Play();
+                    var player1 = new Player();
+                    var player2 = new Player();
+                    var deck = new Deck();
+                    int deckCount = deck.Count();
+
+                    for (int i = 0; i < deckCount; i++)
+                    {
+                        if (i % 2 == 0)    
+                            player1.AddCards(deck.GetCard());
+                        else
+                            player2.AddCards(deck.GetCard());
+                    }
+
+                    var game = InitGame(verboseMode, player1, player2);
+
+                    while (game.GameCanContinue())
+                    {
+                        game.PlayTurn();
+                    }
                 }
 
                 Console.WriteLine("\nPress any key to play again. Press {ENTER} to quit.");
@@ -56,15 +74,15 @@ namespace WarCardGame
             while (Console.ReadKey().Key != ConsoleKey.Enter);
         }
 
-        private static Game InitGame(bool verboseMode)
+        private static Game InitGame(bool verboseMode, Player player1, Player player2)
         {
-            var game = new Game();
+            var game = new Game(player1, player2);
 
             if (verboseMode)
             {
                 game.OnTurnStart += (sender, eventArgs) =>
                 {
-                    Console.WriteLine($"Turn #{eventArgs.Turn}. Player 1 has {game.Player1CardCount + 1} cards and player 2 has {game.Player2CardCount + 1} cards.");
+                    Console.WriteLine($"Turn #{game.TurnCount}. Player 1 has {player1.CardsLeft + 1} cards and player 2 has {player2.CardsLeft + 1} cards.");
                     Console.WriteLine($"\tPlayer 1 ({eventArgs.Player1Card}) vs Player 2 ({eventArgs.Player2Card})");
                 };
 
@@ -97,9 +115,9 @@ namespace WarCardGame
             game.OnGameFinish += (sender, eventArgs) =>
             {
                 if (eventArgs.Winner == "Tie")
-                    Console.WriteLine($"We'll call it a tie after {eventArgs.Turn} turns.");
+                    Console.WriteLine($"We'll call it a tie after {game.TurnCount} turns.");
                 else
-                    Console.WriteLine($"Winner is {eventArgs.Winner} after {eventArgs.Turn} turns.");
+                    Console.WriteLine($"Winner is {eventArgs.Winner} after {game.TurnCount} turns.");
             };
 
             return game;
