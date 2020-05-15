@@ -21,8 +21,6 @@ namespace WarCardGame
         public event EventHandler<WarFinishEventArgs> OnWarFinish;
         public event EventHandler<FinishEventArgs> OnGameFinish;
 
-        private static readonly Random Random = new Random();
-        
         public Game(Player player1, Player player2)
         {
             _player1 = player1;
