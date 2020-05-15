@@ -8,7 +8,6 @@ namespace WarCardGame.Tests
     public class When_Game_Is_Played
     {
         [Test]
-        [Repeat(100)]
         public void Winner_Should_Be_Determined_By_Higher_Card()
         {
             var player1 = CreateMockPlayer(new Card(4, Suit.Diamonds), new Card(8, Suit.Diamonds));
@@ -30,7 +29,6 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        [Repeat(100)]
         public void Game_Should_End_When_Player_Runs_Out_Of_Cards()
         {
             var player1 = CreateMockPlayer(new Card(4, Suit.Diamonds));
@@ -45,7 +43,6 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        [Repeat(100)]
         public void War_Should_Occur_When_Cards_Are_Equal()
         {
             var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
@@ -59,7 +56,6 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        [Repeat(100)]
         public void Winner_Of_War_Should_Be_Determined_By_Higher_Card()
         {
             var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
@@ -81,7 +77,6 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        [Repeat(100)]
         public void When_Multiple_Wars_Happen_Then_Winner_Should_Take_More_Cards()
         {
             var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(3, Suit.Diamonds), new Card(8, Suit.Diamonds), new Card(9, Suit.Clubs), new Card(5, Suit.Clubs));
@@ -105,7 +100,6 @@ namespace WarCardGame.Tests
         }
 
         [Test]
-        [Repeat(100)]
         public void Game_Should_End_When_Player_Does_Not_Have_Enough_Cards_To_Finish_War()
         {
             var player1 = CreateMockPlayer(new Card(7, Suit.Diamonds), new Card(2, Suit.Clubs), new Card(3, Suit.Clubs));
